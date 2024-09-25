@@ -9,6 +9,7 @@ pub struct Car {
     mileage: u32,
     location: String,
     price_per_hour: Decimal,
+    owner_badge_id: NonFungibleLocalId,
 }
 
 #[derive(ScryptoSbor, NonFungibleData, Clone)]
@@ -46,6 +47,7 @@ mod car_sharing {
             mint_user_badge => restrict_to: [OWNER];
             mint_rental_badge => restrict_to: [OWNER];
             add_car => restrict_to: [car_owner];
+            withdraw_car_owner_vault => restrict_to: [car_owner];
             rent_car => restrict_to: [user];
             return_car => restrict_to: [user];
             list_available_cars => restrict_to: [user];
@@ -53,13 +55,14 @@ mod car_sharing {
     }
     struct carSharing {
         // The vault will hold car NFTs
-        cars_vault: Vault,
-        car_resource_manager: ResourceManager,
+        car_sharing_vault: Vault,
+        car_sharing_resource_manager: ResourceManager,
         // available_cars: BTreeMap<String, (Global<ResourceAddress>, NonFungibleId)>,
         car_owner_badge_resource_manager: ResourceManager,
         user_badge_resource_manager: ResourceManager,
         rental_badge_resource_manager: ResourceManager, // New resource for rental badges
         rental_payment_vaults: HashMap<NonFungibleLocalId, Vault>, // Mapping between UserBadge NFT and XRD vaults
+        car_owner_vaults: HashMap<NonFungibleLocalId, Vault>, // Mapping between CarOwnerBadge NFT and XRD vaults
     }
 
     impl carSharing {
@@ -102,6 +105,17 @@ mod car_sharing {
                     })
                     // starting with no initial supply means a resource manger is produced instead of a bucket
                     .create_with_no_initial_supply();
+
+            let car_owner_badge_bucket: NonFungibleLocalId = car_owner_badges_manager
+                .mint_non_fungible(
+                    &NonFungibleLocalId::integer(1),
+                    CarOwnerBadge {
+                        owner_number: 1,
+                        owner_name: "Test".to_string(),
+                    },
+                )
+                .as_non_fungible()
+                .non_fungible_local_id();
 
             // create a new User Badge resource manager
             let user_badges_manager: ResourceManager =
@@ -177,6 +191,7 @@ mod car_sharing {
                                 mileage: 15000,
                                 location: "New York".to_string(),
                                 price_per_hour: dec!("10"),
+                                owner_badge_id: car_owner_badge_bucket.clone(),
                             },
                             Car {
                                 make: "BMW".to_string(),
@@ -186,6 +201,7 @@ mod car_sharing {
                                 mileage: 18300,
                                 location: "Lisboa".to_string(),
                                 price_per_hour: dec!("8"),
+                                owner_badge_id: car_owner_badge_bucket.clone(),
                             },
                             Car {
                                 make: "Audi".to_string(),
@@ -195,6 +211,7 @@ mod car_sharing {
                                 mileage: 20000,
                                 location: "Barcelona".to_string(),
                                 price_per_hour: dec!("12"),
+                                owner_badge_id: car_owner_badge_bucket.clone(),
                             },
                             Car {
                                 make: "Nissan".to_string(),
@@ -204,6 +221,7 @@ mod car_sharing {
                                 mileage: 23000,
                                 location: "Paris".to_string(),
                                 price_per_hour: dec!("4"),
+                                owner_badge_id: car_owner_badge_bucket.clone(),
                             },
                             Car {
                                 make: "Chevrolet".to_string(),
@@ -213,6 +231,7 @@ mod car_sharing {
                                 mileage: 12000,
                                 location: "London".to_string(),
                                 price_per_hour: dec!("5"),
+                                owner_badge_id: car_owner_badge_bucket.clone(),
                             },
                         ],
                     )
@@ -222,17 +241,22 @@ mod car_sharing {
 
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             let car_sharing_impl: Global<carSharing> = Self {
-                cars_vault: Vault::with_bucket(cars_bucket),
-                car_resource_manager: car_rs_manager,
+                car_sharing_vault: Vault::with_bucket(cars_bucket),
+                car_sharing_resource_manager: car_rs_manager,
                 car_owner_badge_resource_manager: car_owner_badges_manager,
                 user_badge_resource_manager: user_badges_manager,
                 rental_badge_resource_manager: rental_badges_manager,
                 rental_payment_vaults: HashMap::new(), // Empty map to store a payment vault for each RentalBadge
+                car_owner_vaults: HashMap::new(), // Empty map to store a payment vault for each CarOwnerBadge
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Fixed(rule!(require(
                 owner_badge.resource_address()
             ))))
+            .roles(roles!(
+                car_owner => rule!(require(car_owner_badges_manager.address()));
+                user => rule!(require(user_badges_manager.address()));))
+            .with_address(address_reservation)
             .globalize();
             (car_sharing_impl, owner_badge)
         }
@@ -247,6 +271,12 @@ mod car_sharing {
                         owner_name: name,
                     },
                 );
+            self.car_owner_vaults.insert(
+                car_owner_badge_bucket
+                    .as_non_fungible()
+                    .non_fungible_local_id(),
+                Vault::new(XRD),
+            );
             car_owner_badge_bucket
         }
         pub fn mint_user_badge(&mut self, name: String, number: u64) -> Bucket {
@@ -284,7 +314,24 @@ mod car_sharing {
 
         // Method to add a new car to the platform
         pub fn add_car(&mut self, car: Car) {
-            self.car_resource_manager.mint_ruid_non_fungible(car);
+            self.car_sharing_vault.put(
+                self.car_sharing_resource_manager
+                    .mint_ruid_non_fungible(car),
+            );
+        }
+
+        // Withdraw the content of a CarOwner vaul
+        pub fn withdraw_car_owner_vault(&mut self, car_owner_proof: Proof) -> Bucket {
+            let checked_proof: CheckedProof =
+                car_owner_proof.check(self.car_owner_badge_resource_manager.address());
+            let car_owner_local_id: NonFungibleLocalId =
+                checked_proof.as_non_fungible().non_fungible_local_id();
+            let car_owner_vault: Option<&mut Vault> =
+                self.car_owner_vaults.get_mut(&car_owner_local_id);
+            match car_owner_vault {
+                Some(payment) => payment.take_all(),
+                None => panic!("The owner vault does not exists."),
+            }
         }
 
         // Method to allow users to rent a car (retrieve a car NFT)
@@ -306,14 +353,17 @@ mod car_sharing {
                 ResourceAddress,
                 NonFungibleLocalId,
             ) = car_nft_id.clone().into_parts();
-            assert_eq!(requested_car_address, self.car_resource_manager.address());
+            assert_eq!(
+                requested_car_address,
+                self.car_sharing_resource_manager.address()
+            );
             let rented_car: NonFungibleBucket = self
-                .cars_vault
+                .car_sharing_vault
                 .as_non_fungible()
                 .take_non_fungible(&requested_car_local_id);
 
             let rental_price: Decimal = self
-                .car_resource_manager
+                .car_sharing_resource_manager
                 .get_non_fungible_data::<Car>(&requested_car_local_id)
                 .price_per_hour
                 * duration_in_hours;
@@ -333,23 +383,33 @@ mod car_sharing {
         }
 
         // Method to return a car
-        pub fn return_car(&mut self, rented_car: Bucket, rental_badge: Bucket) -> Bucket {
-            self.cars_vault.put(rented_car);
+        pub fn return_car(&mut self, rented_car: Bucket, rental_badge: Bucket) {
+            let car_owner_badge_id: NonFungibleLocalId = self
+                .car_sharing_resource_manager
+                .get_non_fungible_data::<Car>(&rented_car.as_non_fungible().non_fungible_local_id())
+                .owner_badge_id;
+            self.car_sharing_vault.put(rented_car);
             let payment_vault: Option<Vault> = self
                 .rental_payment_vaults
                 .remove(&rental_badge.as_non_fungible().non_fungible_local_id());
-            rental_badge.burn();
-            // TODO: This should be returned by this function since it's going to the user and not the car owner
-            match payment_vault {
+            let payment_bucket = match payment_vault {
                 Some(mut payment) => payment.take_all(),
-                None => panic!(""),
-            }
+                None => panic!("No vault associated with RentalBadge found"),
+            };
+            let car_owner_vault: Option<&mut Vault> =
+                self.car_owner_vaults.get_mut(&car_owner_badge_id);
+            match car_owner_vault {
+                Some(owner_vault) => owner_vault.put(payment_bucket),
+                None => panic!("The owner vault does not exists."),
+            };
+
+            rental_badge.burn();
         }
 
         // Method to list available cars
         pub fn list_available_cars(&self) -> indexmap::IndexSet<NonFungibleLocalId> {
             let available_cars_ids: indexmap::IndexSet<NonFungibleLocalId> = self
-                .cars_vault
+                .car_sharing_vault
                 .as_non_fungible()
                 .non_fungible_local_ids(100);
             // info!(available_cars_ids.to_string());
