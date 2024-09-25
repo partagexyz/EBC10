@@ -8,7 +8,7 @@ pub struct Car {
     vin: String, // unique Vehicle Identification Number
     mileage: u32,
     location: String,
-    price: Decimal,
+    price_per_hour: Decimal,
 }
 
 #[derive(ScryptoSbor, NonFungibleData, Clone)]
@@ -59,6 +59,7 @@ mod car_sharing {
         car_owner_badge_resource_manager: ResourceManager,
         user_badge_resource_manager: ResourceManager,
         rental_badge_resource_manager: ResourceManager, // New resource for rental badges
+        rental_payment_vaults: HashMap<NonFungibleLocalId, Vault>, // Mapping between UserBadge NFT and XRD vaults
     }
 
     impl carSharing {
@@ -175,7 +176,7 @@ mod car_sharing {
                                 vin: "5YJSA1E26MF1XXXXX".to_string(),
                                 mileage: 15000,
                                 location: "New York".to_string(),
-                                price: dec!("100"),
+                                price_per_hour: dec!("10"),
                             },
                             Car {
                                 make: "BMW".to_string(),
@@ -184,7 +185,7 @@ mod car_sharing {
                                 vin: "WBY7Z4C57M7XXXXX".to_string(),
                                 mileage: 18300,
                                 location: "Lisboa".to_string(),
-                                price: dec!("80"),
+                                price_per_hour: dec!("8"),
                             },
                             Car {
                                 make: "Audi".to_string(),
@@ -193,7 +194,7 @@ mod car_sharing {
                                 vin: "WA1LAAGE4LB0XXXXX".to_string(),
                                 mileage: 20000,
                                 location: "Barcelona".to_string(),
-                                price: dec!("120"),
+                                price_per_hour: dec!("12"),
                             },
                             Car {
                                 make: "Nissan".to_string(),
@@ -202,7 +203,7 @@ mod car_sharing {
                                 vin: "1N4AZ1CP7LC3XXXXX".to_string(),
                                 mileage: 23000,
                                 location: "Paris".to_string(),
-                                price: dec!("40"),
+                                price_per_hour: dec!("4"),
                             },
                             Car {
                                 make: "Chevrolet".to_string(),
@@ -211,7 +212,7 @@ mod car_sharing {
                                 vin: "1G1FY6S00M4XXXXX".to_string(),
                                 mileage: 12000,
                                 location: "London".to_string(),
-                                price: dec!("50"),
+                                price_per_hour: dec!("5"),
                             },
                         ],
                     )
@@ -226,6 +227,7 @@ mod car_sharing {
                 car_owner_badge_resource_manager: car_owner_badges_manager,
                 user_badge_resource_manager: user_badges_manager,
                 rental_badge_resource_manager: rental_badges_manager,
+                rental_payment_vaults: HashMap::new(), // Empty map to store a payment vault for each RentalBadge
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Fixed(rule!(require(
@@ -291,23 +293,57 @@ mod car_sharing {
             car_nft_id: NonFungibleGlobalId,
             user_badge_id: NonFungibleGlobalId,
             duration_in_hours: u32,
+            payment_bucket: Bucket,
         ) -> (NonFungibleBucket, Bucket) {
-            let (resource_address, nft_local_id): (ResourceAddress, NonFungibleLocalId) =
-                car_nft_id.clone().into_parts();
-            assert_eq!(resource_address, self.car_resource_manager.address());
+            let xrd_vault: Vault = Vault::new(XRD);
+            assert_eq!(
+                xrd_vault.resource_address(),
+                payment_bucket.resource_address(),
+                "We only accept XRD for car rental."
+            );
+
+            let (requested_car_address, requested_car_local_id): (
+                ResourceAddress,
+                NonFungibleLocalId,
+            ) = car_nft_id.clone().into_parts();
+            assert_eq!(requested_car_address, self.car_resource_manager.address());
             let rented_car: NonFungibleBucket = self
                 .cars_vault
                 .as_non_fungible()
-                .take_non_fungible(&nft_local_id);
+                .take_non_fungible(&requested_car_local_id);
+
+            let rental_price: Decimal = self
+                .car_resource_manager
+                .get_non_fungible_data::<Car>(&requested_car_local_id)
+                .price_per_hour
+                * duration_in_hours;
+            assert!(
+                payment_bucket.amount() >= rental_price,
+                "You did not provided enough XRD for this rental."
+            );
             let rental_badge: Bucket =
                 self.mint_rental_badge(car_nft_id, user_badge_id, duration_in_hours);
+
+            let rental_payment_vault: Vault = Vault::with_bucket(payment_bucket);
+            self.rental_payment_vaults.insert(
+                rental_badge.as_non_fungible().non_fungible_local_id(),
+                rental_payment_vault,
+            );
             (rented_car, rental_badge)
         }
 
         // Method to return a car
-        pub fn return_car(&mut self, rented_car: Bucket, rental_bagde: Bucket) {
+        pub fn return_car(&mut self, rented_car: Bucket, rental_badge: Bucket) -> Bucket {
             self.cars_vault.put(rented_car);
-            rental_bagde.burn();
+            let payment_vault: Option<Vault> = self
+                .rental_payment_vaults
+                .remove(&rental_badge.as_non_fungible().non_fungible_local_id());
+            rental_badge.burn();
+            // TODO: This should be returned by this function since it's going to the user and not the car owner
+            match payment_vault {
+                Some(mut payment) => payment.take_all(),
+                None => panic!(""),
+            }
         }
 
         // Method to list available cars
