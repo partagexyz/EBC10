@@ -1,6 +1,6 @@
 use scrypto_test::prelude::*;
 
-use carSharing::carSharing_module_test::*;
+use carSharing::car_sharing_test::*;
 
 #[test]
 fn test_carSharing() {
