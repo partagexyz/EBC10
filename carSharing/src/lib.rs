@@ -1,5 +1,4 @@
 use scrypto::prelude::*;
-
 #[derive(ScryptoSbor, NonFungibleData)]
 pub struct Car {
     // Define what data will be stored for each car NFT
@@ -22,6 +21,15 @@ struct CarOwnerBadge {
 struct UserBadge {
     user_number: u64,
     user_name: String,
+    driving_license: String,
+}
+
+#[derive(ScryptoSbor, NonFungibleData, Clone)]
+struct RentalBadge {
+    car_nft_id: NonFungibleGlobalId,
+    user_badge_id: NonFungibleGlobalId,
+    start_time: Instant,
+    duration_in_hours: u32,
 }
 
 #[blueprint]
@@ -36,6 +44,7 @@ mod car_sharing {
         methods {
             mint_car_owner_badge => restrict_to: [OWNER];
             mint_user_badge => restrict_to: [OWNER];
+            mint_rental_badge => restrict_to: [OWNER];
             add_car => restrict_to: [car_owner];
             rent_car => restrict_to: [user];
             return_car => restrict_to: [user];
@@ -46,9 +55,10 @@ mod car_sharing {
         // The vault will hold car NFTs
         cars_vault: Vault,
         car_resource_manager: ResourceManager,
-        // available_cars: HashMap<String, (Global<ResourceAddress>, NonFungibleId)>,
+        // available_cars: BTreeMap<String, (Global<ResourceAddress>, NonFungibleId)>,
         car_owner_badge_resource_manager: ResourceManager,
         user_badge_resource_manager: ResourceManager,
+        rental_badge_resource_manager: ResourceManager, // New resource for rental badges
     }
 
     impl carSharing {
@@ -82,15 +92,11 @@ mod car_sharing {
                         minter_updater => rule!(deny_all);
                     })
                     .recall_roles(recall_roles! {
-                        recaller => rule!(require_any_of(vec![
-                                owner_badge.resource_address(),
-                            ]));
+                        recaller => rule!(require(owner_badge.resource_address()));
                         recaller_updater => rule!(deny_all);
                     })
                     .burn_roles(burn_roles! {
-                        burner => rule!(require_any_of(vec![
-                                owner_badge.resource_address(),
-                            ]));
+                        burner => rule!(require(owner_badge.resource_address()));
                         burner_updater => rule!(deny_all);
                     })
                     // starting with no initial supply means a resource manger is produced instead of a bucket
@@ -109,15 +115,34 @@ mod car_sharing {
                         minter_updater => rule!(deny_all);
                     })
                     .recall_roles(recall_roles! {
-                        recaller => rule!(require_any_of(vec![
-                                owner_badge.resource_address(),
-                            ]));
+                        recaller => rule!(require(owner_badge.resource_address(),));
                         recaller_updater => rule!(deny_all);
                     })
                     .burn_roles(burn_roles! {
-                        burner => rule!(require_any_of(vec![
-                                owner_badge.resource_address(),
-                            ]));
+                        burner => rule!(require(owner_badge.resource_address()));
+                        burner_updater => rule!(deny_all);
+                    })
+                    // starting with no initial supply means a resource manger is produced instead of a bucket
+                    .create_with_no_initial_supply();
+
+            // create a new User Badge resource manager
+            let rental_badges_manager: ResourceManager =
+                ResourceBuilder::new_ruid_non_fungible::<RentalBadge>(OwnerRole::None)
+                    .metadata(metadata!(
+                        init {
+                            "name" => "Rental Badge", locked;
+                        }
+                    ))
+                    .mint_roles(mint_roles! {
+                        minter => rule!(require(global_caller(component_address)));
+                        minter_updater => rule!(deny_all);
+                    })
+                    .recall_roles(recall_roles! {
+                        recaller => rule!(require(owner_badge.resource_address(),));
+                        recaller_updater => rule!(deny_all);
+                    })
+                    .burn_roles(burn_roles! {
+                        burner => rule!(require(owner_badge.resource_address()));
                         burner_updater => rule!(deny_all);
                     })
                     // starting with no initial supply means a resource manger is produced instead of a bucket
@@ -133,11 +158,11 @@ mod car_sharing {
                         }
                     })
                     .mint_roles(mint_roles! {
-                        minter => rule!(allow_all);
+                        minter => rule!(require(car_owner_badges_manager.address()));
                         minter_updater => rule!(deny_all);
                     })
                     .burn_roles(burn_roles! {
-                        burner => rule!(require_any_of(vec![owner_badge.resource_address()]));
+                        burner => rule!(require(car_owner_badges_manager.address()));
                         burner_updater => rule!(deny_all);
                     })
                     .mint_initial_supply(
@@ -192,12 +217,15 @@ mod car_sharing {
                     )
                     .into();
 
+            let car_rs_manager: ResourceManager = cars_bucket.resource_manager();
+
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             let car_sharing_impl: Global<carSharing> = Self {
                 cars_vault: Vault::with_bucket(cars_bucket),
-                car_resource_manager: cars_bucket.resource_manager(), // available_cars: BTreeMap::new(),
+                car_resource_manager: car_rs_manager,
                 car_owner_badge_resource_manager: car_owner_badges_manager,
                 user_badge_resource_manager: user_badges_manager,
+                rental_badge_resource_manager: rental_badges_manager,
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Fixed(rule!(require(
@@ -227,41 +255,59 @@ mod car_sharing {
                     UserBadge {
                         user_number: number,
                         user_name: name,
+                        driving_license: "TODO".to_string(),
                     },
                 );
             user_badge_bucket
         }
+
+        pub fn mint_rental_badge(
+            &mut self,
+            car_nft_id: NonFungibleGlobalId,
+            user_badge_id: NonFungibleGlobalId,
+            duration_in_hours: u32,
+        ) -> Bucket {
+            // TODO: why not NonFungibleBucket
+
+            let time: Instant = Clock::current_time(TimePrecisionV2::Second);
+            // Create a badge that grants temporary access to a specific car
+            self.rental_badge_resource_manager
+                .mint_ruid_non_fungible(RentalBadge {
+                    car_nft_id: car_nft_id,
+                    user_badge_id: user_badge_id,
+                    start_time: time,
+                    duration_in_hours: duration_in_hours,
+                })
+        }
+
         // Method to add a new car to the platform
         pub fn add_car(&mut self, car: Car) {
             self.car_resource_manager.mint_ruid_non_fungible(car);
         }
 
         // Method to allow users to rent a car (retrieve a car NFT)
-        pub fn rent_car(&mut self, car_id: String) -> NonFungibleBucket {
-            if let Some((resource, non_fungible_id)) = self.available_cars.remove(&car_id) {
-                // Remove the car from the vault
-                self.cars_vault.take_non_fungible(&non_fungible_id)
-            } else {
-                // Handle car not found
-                panic!("Car not found or already rented")
-            }
+        pub fn rent_car(
+            &mut self,
+            car_nft_id: NonFungibleGlobalId,
+            user_badge_id: NonFungibleGlobalId,
+            duration_in_hours: u32,
+        ) -> (NonFungibleBucket, Bucket) {
+            let (resource_address, nft_local_id): (ResourceAddress, NonFungibleLocalId) =
+                car_nft_id.clone().into_parts();
+            assert_eq!(resource_address, self.car_resource_manager.address());
+            let rented_car: NonFungibleBucket = self
+                .cars_vault
+                .as_non_fungible()
+                .take_non_fungible(&nft_local_id);
+            let rental_badge: Bucket =
+                self.mint_rental_badge(car_nft_id, user_badge_id, duration_in_hours);
+            (rented_car, rental_badge)
         }
 
         // Method to return a car
-        pub fn return_car(&mut self, car_bucket: Bucket) {
-            // Assuming the bucket contains exactly one car
-            let car_non_fungible: NonFungible<_> = car_bucket.non_fungible();
-            let car_id = format!(
-                "{}_{}_{}",
-                car_non_fungible.data().make,
-                car_non_fungible.data().model,
-                car_non_fungible.data().year
-            );
-            self.available_cars.insert(
-                car_id,
-                (car_bucket.resource_address(), car_non_fungible.id()),
-            );
-            self.cars_vault.put(car_bucket);
+        pub fn return_car(&mut self, rented_car: Bucket, rental_bagde: Bucket) {
+            self.cars_vault.put(rented_car);
+            rental_bagde.burn();
         }
 
         // Method to list available cars
@@ -270,7 +316,7 @@ mod car_sharing {
                 .cars_vault
                 .as_non_fungible()
                 .non_fungible_local_ids(100);
-            info!(available_cars_ids);
+            // info!(available_cars_ids.to_string());
             available_cars_ids
         }
     }
