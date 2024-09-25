@@ -106,7 +106,7 @@ mod car_sharing {
                     // starting with no initial supply means a resource manger is produced instead of a bucket
                     .create_with_no_initial_supply();
 
-            let car_owner_badge_bucket: NonFungibleLocalId = car_owner_badges_manager
+            let car_owner_badge_dummy_bucket: NonFungibleLocalId = car_owner_badges_manager
                 .mint_non_fungible(
                     &NonFungibleLocalId::integer(1),
                     CarOwnerBadge {
@@ -191,7 +191,7 @@ mod car_sharing {
                                 mileage: 15000,
                                 location: "New York".to_string(),
                                 price_per_hour: dec!("10"),
-                                owner_badge_id: car_owner_badge_bucket.clone(),
+                                owner_badge_id: car_owner_badge_dummy_bucket.clone(),
                             },
                             Car {
                                 make: "BMW".to_string(),
@@ -201,7 +201,7 @@ mod car_sharing {
                                 mileage: 18300,
                                 location: "Lisboa".to_string(),
                                 price_per_hour: dec!("8"),
-                                owner_badge_id: car_owner_badge_bucket.clone(),
+                                owner_badge_id: car_owner_badge_dummy_bucket.clone(),
                             },
                             Car {
                                 make: "Audi".to_string(),
@@ -211,7 +211,7 @@ mod car_sharing {
                                 mileage: 20000,
                                 location: "Barcelona".to_string(),
                                 price_per_hour: dec!("12"),
-                                owner_badge_id: car_owner_badge_bucket.clone(),
+                                owner_badge_id: car_owner_badge_dummy_bucket.clone(),
                             },
                             Car {
                                 make: "Nissan".to_string(),
@@ -221,7 +221,7 @@ mod car_sharing {
                                 mileage: 23000,
                                 location: "Paris".to_string(),
                                 price_per_hour: dec!("4"),
-                                owner_badge_id: car_owner_badge_bucket.clone(),
+                                owner_badge_id: car_owner_badge_dummy_bucket.clone(),
                             },
                             Car {
                                 make: "Chevrolet".to_string(),
@@ -231,7 +231,7 @@ mod car_sharing {
                                 mileage: 12000,
                                 location: "London".to_string(),
                                 price_per_hour: dec!("5"),
-                                owner_badge_id: car_owner_badge_bucket.clone(),
+                                owner_badge_id: car_owner_badge_dummy_bucket.clone(),
                             },
                         ],
                     )
