@@ -1,4 +1,4 @@
-use crate::car_rental::car_rental::*;
+use crate::car_rental::car_rental::CarRental;
 use scrypto::prelude::*;
 #[derive(ScryptoSbor, NonFungibleData)]
 pub struct Car {
@@ -39,13 +39,12 @@ mod car_sharing {
             create_car_owner_account => PUBLIC;
             create_user_account => PUBLIC;
             add_car => restrict_to: [car_owner];
-            list_available_cars => restrict_to: [user];
         }
     }
     struct CarSharing {
-        car_rentals_components: Vec<Global<CarRental>>,
         car_owner_badge_resource_manager: ResourceManager,
         user_badge_resource_manager: ResourceManager,
+        fee_per_rental: Decimal,
     }
 
     impl CarSharing {
@@ -202,9 +201,9 @@ mod car_sharing {
 
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             let car_sharing_impl: Global<CarSharing> = Self {
-                car_rentals_components: Vec::new(),
                 car_owner_badge_resource_manager: car_owner_badges_manager,
                 user_badge_resource_manager: user_badges_manager,
+                fee_per_rental: dec!("2"),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Fixed(rule!(require(
@@ -218,7 +217,16 @@ mod car_sharing {
             (car_sharing_impl, component_owner_badge)
         }
 
-        pub fn create_car_owner_account(&mut self, name: String, number: u64) -> Bucket {
+        pub fn create_car_owner_account(
+            &mut self,
+            name: String,
+            number: u64,
+            car_proof: String,
+        ) -> Bucket {
+            assert_eq!(
+                car_proof, "Valid Car",
+                "You don't have a valid driving license."
+            );
             // Mint and receive a new car owner badge.
             let car_owner_badge_bucket: Bucket =
                 self.car_owner_badge_resource_manager.mint_non_fungible(
@@ -230,8 +238,16 @@ mod car_sharing {
                 );
             car_owner_badge_bucket
         }
-        pub fn create_user_account(&mut self, name: String, number: u64) -> Bucket {
-            // TODO: Add check
+        pub fn create_user_account(
+            &mut self,
+            name: String,
+            number: u64,
+            driving_license_proof: String,
+        ) -> Bucket {
+            assert_eq!(
+                driving_license_proof, "Valid Driving License",
+                "You don't have a valid driving license."
+            );
             // Mint and receive a new user badge.
             let user_badge_bucket: Bucket =
                 self.car_owner_badge_resource_manager.mint_non_fungible(
@@ -239,20 +255,27 @@ mod car_sharing {
                     UserBadge {
                         user_number: number,
                         user_name: name,
-                        driving_license: "TODO".to_string(),
+                        driving_license: driving_license_proof,
                     },
                 );
             user_badge_bucket
         }
 
         // Method to add a new car to the platform
-        pub fn add_car(&mut self, car: Car) {
-            // TODO: Create new CarRental component
-        }
+        pub fn add_car(&mut self, car_owner_proof: Proof, car: Car, price_per_hour: Decimal) {
+            let checked_proof: CheckedProof =
+                car_owner_proof.check(self.car_owner_badge_resource_manager.address());
+            let car_owner_badge_global_id = NonFungibleGlobalId::new(
+                checked_proof.resource_address(),
+                checked_proof.as_non_fungible().non_fungible_local_id(),
+            );
 
-        // Method to list available cars
-        pub fn list_available_cars(&self) {
-            // TODO: loop over all car_rentals_components and return the available ones
+            let (car_rental, car_rental_owner_badge) = CarRental::instantiate_car_rental(
+                car_owner_badge_global_id,
+                self.user_badge_resource_manager.address(),
+                price_per_hour,
+                self.fee_per_rental,
+            );
         }
     }
 }
