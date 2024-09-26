@@ -1,6 +1,6 @@
 # Partage - Web3 Car-Sharing Platform
 
-Partage Car-Sharing will to improve the existing sharing economy services by leveraging the best features of blockchain technology: decentralization, data privacy, self-sovereignty, and a more equitable distribution of economic benefits.
+Partage will to improve the existing sharing economy services by leveraging the best features of blockchain technology: decentralization, data privacy, self-sovereignty, and a more equitable distribution of economic benefits.
 
 Close to getAround in terms of functionality, Partage Car-Sharing allows users to rent cars owned by other users, generating a passive income from low-risk investments on one side, and unlocking cars on-demand everywhere in the world on the other side.
 
