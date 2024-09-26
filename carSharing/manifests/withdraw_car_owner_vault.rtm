@@ -1,0 +1,30 @@
+CALL_METHOD
+    Address("${RESIM_ACCOUNT_ADDRESS}")
+    "lock_fee"
+    Decimal("100");
+    
+CALL_METHOD
+    Address("${RESIM_ACC_ADD}")
+    "create_proof_of_non_fungibles"
+    Address("${RESIM_CAR_OWNER_BADGE}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#1#")
+    )
+;
+
+POP_FROM_AUTH_ZONE
+    Proof("car_owner_proof")
+;
+
+
+CALL_METHOD
+    Address("${RESIM_CARRENTAL_COMP_ADD}")
+    "withdraw_car_owner_vault"
+    Proof("car_owner_proof")
+;
+
+CALL_METHOD
+  Address("${RESIM_ACC_ADD}")
+  "deposit_batch"
+  Expression("ENTIRE_WORKTOP")
+;
