@@ -4,7 +4,7 @@ The blockchain-based car-sharing platform is made of two main modules: car_renta
 
 In short, this smart contract allows users to rent cars owned by other users.
 
-![Partage car-sharing data flow](./CarSharing/dataflow.png)
+![Partage car-sharing data flow](./car_sharing/dataflow.png)
 
 #### Key features
 
