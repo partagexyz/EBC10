@@ -1,41 +1,49 @@
 CALL_METHOD
-    Address("account_sim1c956qr3kxlgypxwst89j9yf24tjc7zxd4up38x37zr6q4jxdx9rhma")
+    Address("${RESIM_ACCOUNT_ADDRESS}")
     "lock_fee"
     Decimal("100");
 
-CALL_METHOD
-    Address("account_sim1c956qr3kxlgypxwst89j9yf24tjc7zxd4up38x37zr6q4jxdx9rhma")
-    "create_proof_of_non_fungibles"
-    Address("resource_sim1n2vt64l59djpheg508yayhce6zal9d0dx9lxkxv6hm5gwg3crmzfxy")
-    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"));
-
-POP_FROM_AUTH_ZONE Proof("proof_car_owner");
 
 # CALL_METHOD
-#   Address("component_sim1cqvn5c54g8a2mqq28pq40dcc863f2flqvhvl00awmt7ae5z636nt7v")
+#     Address("${RESIM_ACCOUNT_ADDRESS}")
+#     "create_proof_of_non_fungibles"
+#     Address("resource_sim1nfacq8pamuyafpnavkt6na3jkju83udrz6kq4jyvfgu5pwxkgku4a2")
+#     Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"));
+
+# POP_FROM_AUTH_ZONE Proof("proof_car_owner");
+
+
+# CALL_METHOD
+#   Address("${RESIM_CARSHARING_COMP_ADD}")
 #   "add_car"
-#   Proof("proof1")
+#   Proof("proof_car_owner")
 #   Decimal("10")
 #   "Valid Car"
 # ;
 
+
+## Rent a car
+CALL_METHOD
+    Address("${RESIM_ACCOUNT_ADDRESS}")
+    "create_proof_of_non_fungibles"
+    Address("resource_sim1ntf3m2dsy8vsaffepc0ydhd0lkz337pakvdq8pzx8459am3jqdcl2l")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"));
+
 # Withdrawing 330 XRD from the account component
 CALL_METHOD 
-    Address("account_sim1c956qr3kxlgypxwst89j9yf24tjc7zxd4up38x37zr6q4jxdx9rhma") 
+    Address("${RESIM_ACCOUNT_ADDRESS}") 
     "withdraw"
-    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Decimal("1");
+    Address("${XRD_ADDRESS}")
+    Decimal("52");
 
 # Taking 150 XRD from the worktop and depositing them into Account A
-TAKE_FROM_WORKTOP
-    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Decimal("1")
+TAKE_ALL_FROM_WORKTOP
+    Address("${XRD_ADDRESS}")
     Bucket("payment_bucket");
 
 
 CALL_METHOD
-  Address("component_sim1cz29hdwcx7s7yl0zrnhcfqav9677nep6v4lfzup7j6r7uwhdqhurxv")
-  "rent_car"
-  5u32
-  Proof("proof_car_owner")
-;
+    Address("${RESIM_CARRENTAL_COMP_ADD}")
+    "rent_car"
+    5u32
+    Bucket("payment_bucket");

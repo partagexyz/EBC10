@@ -1,5 +1,5 @@
 CALL_METHOD
-  Address("<component address>")
+  Address("${RESIM_CARSHARING_COMP_ADD}")
   "create_car_owner_account"
   "test"
   1u64
@@ -7,7 +7,7 @@ CALL_METHOD
 ;
 
 CALL_METHOD
-  Address("<account address>")
+  Address("${RESIM_ACC_ADD}")
   "deposit_batch"
   Expression("ENTIRE_WORKTOP")
 ;
