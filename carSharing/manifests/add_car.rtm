@@ -1,0 +1,20 @@
+CALL_METHOD
+  Address("<account address>")
+  "create_proof_of_non_fungibles"
+  Address("resource_tdx_2_1nf7ct8fv5enm6jgzqwys82fee2lqgchjpsued3lltwg6828smklxjn")
+  Array<NonFungibleLocalId>(
+    NonFungibleLocalId("#1#")
+  )
+;
+
+POP_FROM_AUTH_ZONE
+  Proof("test")
+;
+
+CALL_METHOD
+  Address("<component address>")
+  "add_car"
+  Proof("test")
+  Decimal("5")
+  "Valid Car"
+;

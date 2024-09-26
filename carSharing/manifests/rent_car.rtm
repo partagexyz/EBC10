@@ -1,0 +1,27 @@
+CALL_METHOD
+  Address("<account address>")
+  "create_proof_of_non_fungibles"
+  Address("resource_tdx_2_1nfkzd4ffv37f57qavq8359fff5agqhpk274cwydky0pra8mjxgg25u")
+  Array<NonFungibleLocalId>(
+    NonFungibleLocalId("#1#")
+  )
+;
+
+CALL_METHOD
+  Address("<account address>")
+  "withdraw"
+  Address("resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc")
+  Decimal("22")
+;
+
+TAKE_ALL_FROM_WORKTOP
+  Address("<resource address>")
+  Bucket("rent test")
+;
+
+CALL_METHOD
+  Address("<component address>")
+  "rent_car"
+  4u32
+  Bucket("rent test")
+;

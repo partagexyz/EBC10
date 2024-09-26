@@ -1,0 +1,13 @@
+CALL_METHOD
+  Address("<component address>")
+  "create_user_account"
+  "test"
+  1u64
+  "Valid Driving License"
+;
+
+CALL_METHOD
+  Address("<account address>")
+  "deposit_batch"
+  Expression("ENTIRE_WORKTOP")
+;
