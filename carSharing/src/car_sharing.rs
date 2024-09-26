@@ -16,20 +16,8 @@ struct UserBadge {
 
 #[blueprint]
 mod car_sharing {
-    // define auth rules
-    enable_method_auth! {
-    roles {
-        car_owner => updatable_by: [OWNER];
-        user => updatable_by: [OWNER];
-    },
-        // decide which methods are public and which are restricted to certain roles
-        methods {
-            create_car_owner_account => PUBLIC;
-            create_user_account => PUBLIC;
-            add_car => restrict_to: [car_owner];
-        }
-    }
     struct CarSharing {
+        component_owner_badge_address: ResourceAddress,
         car_owner_badge_resource_manager: ResourceManager,
         user_badge_resource_manager: ResourceManager,
         fee_per_rental: Decimal,
@@ -104,6 +92,7 @@ mod car_sharing {
 
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             let car_sharing_impl: Global<CarSharing> = Self {
+                component_owner_badge_address: component_owner_badge.resource_address(),
                 car_owner_badge_resource_manager: car_owner_badges_manager,
                 user_badge_resource_manager: user_badges_manager,
                 fee_per_rental: dec!("2"),
@@ -112,9 +101,6 @@ mod car_sharing {
             .prepare_to_globalize(OwnerRole::Fixed(rule!(require(
                 component_owner_badge.resource_address()
             ))))
-            .roles(roles!(
-                car_owner => rule!(require(car_owner_badges_manager.address()));
-                user => rule!(require(user_badges_manager.address()));))
             .with_address(address_reservation)
             .globalize();
             (car_sharing_impl, component_owner_badge)
@@ -129,7 +115,7 @@ mod car_sharing {
             // TODO: change for a real car ownership NFT (managed by another component)
             assert_eq!(
                 car_proof, "Valid Car",
-                "You don't have a valid driving license."
+                "You don't have a valid car ownership proof."
             );
             // Mint and receive a new car owner badge.
             let car_owner_badge_bucket: Bucket =
@@ -154,15 +140,14 @@ mod car_sharing {
                 "You don't have a valid driving license."
             );
             // Mint and receive a new user badge.
-            let user_badge_bucket: Bucket =
-                self.car_owner_badge_resource_manager.mint_non_fungible(
-                    &NonFungibleLocalId::integer(number),
-                    UserBadge {
-                        user_number: number,
-                        user_name: name,
-                        driving_license: driving_license_proof,
-                    },
-                );
+            let user_badge_bucket: Bucket = self.user_badge_resource_manager.mint_non_fungible(
+                &NonFungibleLocalId::integer(number),
+                UserBadge {
+                    user_number: number,
+                    user_name: name,
+                    driving_license: driving_license_proof,
+                },
+            );
             user_badge_bucket
         }
 
@@ -179,14 +164,15 @@ mod car_sharing {
             // TODO: change for a real car ownership NFT (managed by another component)
             assert_eq!(
                 car_proof, "Valid Car",
-                "You don't have a valid driving license."
+                "You don't have a valid proof of car ownership."
             );
             let car_owner_badge_global_id = NonFungibleGlobalId::new(
                 checked_proof.resource_address(),
                 checked_proof.as_non_fungible().non_fungible_local_id(),
             );
 
-            let (car_rental, car_rental_owner_badge) = CarRental::instantiate_car_rental(
+            CarRental::instantiate_car_rental(
+                self.component_owner_badge_address,
                 car_owner_badge_global_id,
                 self.user_badge_resource_manager.address(),
                 price_per_hour,
