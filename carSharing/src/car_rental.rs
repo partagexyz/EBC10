@@ -47,25 +47,15 @@ mod car_rental {
         // Function to instantiate the CarRental blueprint component with initial NFTs
         // TODO: protect it so only the owner of a CarSharing can implement a CarRental
         pub fn instantiate_car_rental(
+            component_owner_badge_address: ResourceAddress,
             car_owner_global_id: NonFungibleGlobalId,
             user_badge_address: ResourceAddress,
             price_per_hour: Decimal,
             fee: Decimal,
-        ) -> (Global<CarRental>, Bucket) {
+        ) -> Global<CarRental> {
             // reserve an address for the component
             let (address_reservation, component_address) =
                 Runtime::allocate_component_address(CarRental::blueprint_id());
-
-            // create an Owner Badge
-            let component_owner_badge: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
-                .metadata(metadata!(
-                    init {
-                        "name" => "Car Rental Component Owner Badge", locked;
-                    }
-                ))
-                .divisibility(DIVISIBILITY_NONE)
-                .mint_initial_supply(1)
-                .into();
 
             // create a new Rental Badge resource manager
             let rental_badge_bucket: NonFungibleBucket =
@@ -76,15 +66,15 @@ mod car_rental {
                         }
                     ))
                     .recall_roles(recall_roles! {
-                        recaller => rule!(require(component_owner_badge.resource_address(),));
+                        recaller => rule!(require(component_owner_badge_address,));
                         recaller_updater => rule!(deny_all);
                     })
                     .burn_roles(burn_roles! {
-                        burner => rule!(require(component_owner_badge.resource_address()));
+                        burner => rule!(require(component_owner_badge_address));
                         burner_updater => rule!(deny_all);
                     })
-                    .non_fungible_data_update_roles(non_fungible_data_update_roles!{
-                        non_fungible_data_updater => rule!(require(component_owner_badge.resource_address()));
+                    .non_fungible_data_update_roles(non_fungible_data_update_roles! {
+                        non_fungible_data_updater => rule!(require(component_owner_badge_address));
                         non_fungible_data_updater_updater => rule!(deny_all);
                     })
                     .mint_initial_supply([RentalBadge {
@@ -92,8 +82,7 @@ mod car_rental {
                         duration_in_hours: 0,
                     }]);
 
-            // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
-            let car_sharing_impl: Global<CarRental> = Self {
+            Self {
                 price_per_hour: price_per_hour,
                 rental_badge_vault: Vault::with_bucket(rental_badge_bucket.into()),
                 car_owner_global_id: car_owner_global_id,
@@ -103,14 +92,13 @@ mod car_rental {
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Fixed(rule!(require(
-                component_owner_badge.resource_address()
+                component_owner_badge_address
             ))))
             .roles(roles!(
                 user => rule!(require(user_badge_address));
             ))
             .with_address(address_reservation)
-            .globalize();
-            (car_sharing_impl, component_owner_badge)
+            .globalize()
         }
 
         // Withdraw the content of a CarOwner vaul
