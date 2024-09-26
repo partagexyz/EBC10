@@ -7,7 +7,7 @@ Close to getAround in terms of functionality, Partage Car-Sharing allows users t
 Request an early access at https://partage.xyz
 
 - 3-minute pitch: https://www.youtube.com/watch?v=_ar2LtNWE1c 
-- 5-minute code demo https://youtu.be/h6x220Rn5xc 
+- 10-minute code go-through https://youtu.be/h6x220Rn5xc 
 
 ![Partage car-sharing data flow](./car_sharing/dataflow.png)
 
