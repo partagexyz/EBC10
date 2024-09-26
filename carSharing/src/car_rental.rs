@@ -74,7 +74,7 @@ mod car_rental {
                         burner_updater => rule!(deny_all);
                     })
                     .non_fungible_data_update_roles(non_fungible_data_update_roles! {
-                        non_fungible_data_updater => rule!(require(component_owner_badge_address));
+                        non_fungible_data_updater => rule!(require(global_caller(CarRental::blueprint_id())));
                         non_fungible_data_updater_updater => rule!(deny_all);
                     })
                     .mint_initial_supply([RentalBadge {
