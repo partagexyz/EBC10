@@ -3,6 +3,8 @@ The blockchain-based car-sharing platform is made of two main modules: car_renta
 
 In short, this smart contract allows users to rent cars owned by other users. 
 
+![Partage car-sharing data flow](./carSharing/dataflow.png)
+
 #### Key features:
 1. Car NFTs: Each car is represented on the blockchain by an NFT containing metadata such as the car model, construction year, mileage, location and rental price. These NFTs provide a unique, verifiable digital identity for each car.
 
@@ -44,5 +46,3 @@ The smart contract is initialized through the "instantiate_car_sharing" function
 - Platform Owner: Holds the Component Owner Badge, allowing them to administer the platform. The platform owner can mint Car Owner and User Badges.
 - Car Owner: Holds the Car Owner Badge, enabling them to list their vehicles on the platform. Car owners manage their listings but cannot rent cars themselves. 
 - User: Holds the User Badge, allowing them to rent cars. Once the user finishes using the car, they must return it via the return_car function.
-
-![Partage car-sharing data flow](./carSharing/dataflow.png)
