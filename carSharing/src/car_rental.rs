@@ -44,10 +44,10 @@ mod car_rental {
     }
 
     impl CarRental {
-        // Function to instantiate the CarSharing blueprint component with initial NFTs
+        // Function to instantiate the CarRental blueprint component with initial NFTs
         // TODO: protect it so only the owner of a CarSharing can implement a CarRental
         pub fn instantiate_car_rental(
-            car_owner_badge_global_id: NonFungibleGlobalId,
+            car_owner_global_id: NonFungibleGlobalId,
             user_badge_address: ResourceAddress,
             price_per_hour: Decimal,
             fee: Decimal,
@@ -67,7 +67,7 @@ mod car_rental {
                 .mint_initial_supply(1)
                 .into();
 
-            // create a new User Badge resource manager
+            // create a new Rental Badge resource manager
             let rental_badge_bucket: NonFungibleBucket =
                 ResourceBuilder::new_ruid_non_fungible::<RentalBadge>(OwnerRole::None)
                     .metadata(metadata!(
@@ -96,7 +96,7 @@ mod car_rental {
             let car_sharing_impl: Global<CarRental> = Self {
                 price_per_hour: price_per_hour,
                 rental_badge_vault: Vault::with_bucket(rental_badge_bucket.into()),
-                car_owner_global_id: car_owner_badge_global_id,
+                car_owner_global_id: car_owner_global_id,
                 car_owner_vault: Vault::new(XRD),
                 fees_vault: Vault::new(XRD),
                 fee: fee,
@@ -139,6 +139,7 @@ mod car_rental {
                 "You did not provided enough XRD for this rental."
             );
             let rental_badge: Bucket = self.rental_badge_vault.take(1);
+
             let rental_bag_rm: ResourceManager =
                 ResourceManager::from_address(rental_badge.resource_address());
 
@@ -162,5 +163,7 @@ mod car_rental {
             // TODO: check if rental duration was respected
             self.rental_badge_vault.put(rental_badge);
         }
+
+        // TODO: Add logic to withdraw fees
     }
 }
