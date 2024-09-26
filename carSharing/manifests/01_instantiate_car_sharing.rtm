@@ -1,0 +1,19 @@
+# Specific for resim only
+CALL_METHOD
+    Address("${RESIM_ACCOUNT_ADDRESS}")
+    "lock_fee"
+    Decimal("100");
+    
+# Instantiate CarSharing instantiate_car_sharing component
+CALL_FUNCTION
+  Address("<package address>")
+  "CarSharing"
+  "instantiate_car_sharing"
+;
+
+# Deposit return Component Owner badge in Account
+CALL_METHOD
+  Address("${RESIM_ACC_ADD}")
+  "deposit_batch"
+  Expression("ENTIRE_WORKTOP")
+;

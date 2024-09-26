@@ -1,16 +1,19 @@
+# Specific for resim only
 CALL_METHOD
     Address("${RESIM_ACCOUNT_ADDRESS}")
     "lock_fee"
     Decimal("100");
     
+# Create a User account
 CALL_METHOD
   Address("${RESIM_CARSHARING_COMP_ADD}")
   "create_user_account"
-  "test"
-  1u64
-  "Valid Driving License"
+  "User Name"
+  1u64 # User Id (used for User NFT local id also)
+  "Valid Driving License" # If the string is different, minting a badge will be refused
 ;
 
+# Deposit the returned User Badge in the Account
 CALL_METHOD
   Address("${RESIM_ACC_ADD}")
   "deposit_batch"

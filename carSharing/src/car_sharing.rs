@@ -184,6 +184,7 @@ mod car_sharing {
                 checked_proof.as_non_fungible().non_fungible_local_id(),
             );
 
+            // TODO: check if a component was not already created for the same car
             CarRental::instantiate_car_rental(
                 self.component_owner_badge_address,
                 car_owner_badge_global_id,

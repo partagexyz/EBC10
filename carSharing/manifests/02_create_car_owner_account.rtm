@@ -1,16 +1,19 @@
+# Specific for resim only
 CALL_METHOD
     Address("${RESIM_ACCOUNT_ADDRESS}")
     "lock_fee"
     Decimal("100");
     
+# Create a Car Owner account
 CALL_METHOD
   Address("${RESIM_CARSHARING_COMP_ADD}")
   "create_car_owner_account"
-  "test"
-  1u64
-  "Valid Car"
+  "Car Owner Name"
+  1u64 # Car Owner Id (used for Car Owner NFT local id also)
+  "Valid Car" # If the string is different, minting a badge will be refused
 ;
 
+# Deposit the returned Car Owner Badge in the Account
 CALL_METHOD
   Address("${RESIM_ACC_ADD}")
   "deposit_batch"

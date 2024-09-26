@@ -1,8 +1,10 @@
+# Specific for resim only
 CALL_METHOD
     Address("${RESIM_ACCOUNT_ADDRESS}")
     "lock_fee"
     Decimal("100");
     
+# Create a proof of the possession of a Car Owner Badge
 CALL_METHOD
   Address("${RESIM_ACC_ADD}")
   "create_proof_of_non_fungibles"
@@ -11,15 +13,16 @@ CALL_METHOD
     NonFungibleLocalId("#1#")
   )
 ;
-
 POP_FROM_AUTH_ZONE
   Proof("car_owner_proof")
 ;
 
+# Car CarSharing add_car method with the Car Owner Badge Proof
 CALL_METHOD
   Address("${RESIM_CARSHARING_COMP_ADD}")
   "add_car"
   Proof("car_owner_proof")
-  Decimal("5")
-  "Valid Car"
+  Decimal("5") # Car Rental price per hour
+  "Valid Car" # If the string is different, creating the CarRental component will be refused
 ;
+# This creates a CarRental component, but does not return anything

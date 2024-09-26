@@ -1,0 +1,42 @@
+# Specific for resim only
+CALL_METHOD
+    Address("${RESIM_ACCOUNT_ADDRESS}")
+    "lock_fee"
+    Decimal("100");
+    
+# Create a proof of the possession of a User Badge
+CALL_METHOD
+    Address("${RESIM_ACC_ADD}")
+    "create_proof_of_non_fungibles"
+    Address("${RESIM_USER_BADGE}")
+    Array<NonFungibleLocalId>(
+      NonFungibleLocalId("#1#")
+    )
+;
+
+# Withdraw the Rental payment from the Account XRD vault
+CALL_METHOD
+    Address("${RESIM_ACC_ADD}")
+    "withdraw"
+    Address("${XRD_ADDRESS}")
+    Decimal("22")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("${XRD_ADDRESS}")
+    Bucket("rental_payment")
+;
+
+# Call the RentalCar rent_car method
+CALL_METHOD
+    Address("${RESIM_CARRENTAL_COMP_ADD}")
+    "rent_car"
+    4u32 # Rental duration in hours
+    Bucket("rental_payment")
+;
+
+# Deposit the returned Rental Badge in the Account
+CALL_METHOD
+  Address("${RESIM_ACC_ADD}")
+  "deposit_batch"
+  Expression("ENTIRE_WORKTOP")
+;

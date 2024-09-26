@@ -1,8 +1,10 @@
+# Specific for resim only
 CALL_METHOD
     Address("${RESIM_ACCOUNT_ADDRESS}")
     "lock_fee"
     Decimal("100");
     
+# Create a proof of the possession of a Car Owner Badge
 CALL_METHOD
     Address("${RESIM_ACC_ADD}")
     "create_proof_of_non_fungibles"
@@ -11,18 +13,19 @@ CALL_METHOD
         NonFungibleLocalId("#1#")
     )
 ;
-
 POP_FROM_AUTH_ZONE
     Proof("car_owner_proof")
 ;
 
 
+# Call the RentalCar withdraw_car_owner_vault method
 CALL_METHOD
     Address("${RESIM_CARRENTAL_COMP_ADD}")
     "withdraw_car_owner_vault"
     Proof("car_owner_proof")
 ;
 
+# Deposit the returned XRDs in the Account
 CALL_METHOD
   Address("${RESIM_ACC_ADD}")
   "deposit_batch"
