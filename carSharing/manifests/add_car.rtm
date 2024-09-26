@@ -1,20 +1,20 @@
 CALL_METHOD
-  Address("<account address>")
+  Address("${RESIM_ACC_ADD}")
   "create_proof_of_non_fungibles"
-  Address("resource_tdx_2_1nf7ct8fv5enm6jgzqwys82fee2lqgchjpsued3lltwg6828smklxjn")
+  Address("${RESIM_CAR_OWNER_BADGE}")
   Array<NonFungibleLocalId>(
     NonFungibleLocalId("#1#")
   )
 ;
 
 POP_FROM_AUTH_ZONE
-  Proof("test")
+  Proof("car_owner_proof")
 ;
 
 CALL_METHOD
-  Address("<component address>")
+  Address("${RESIM_CARSHARING_COMP_ADD}")
   "add_car"
-  Proof("test")
+  Proof("car_owner_proof")
   Decimal("5")
   "Valid Car"
 ;

@@ -58,29 +58,30 @@ mod car_rental {
                 Runtime::allocate_component_address(CarRental::blueprint_id());
 
             // create a new Rental Badge resource manager
-            let rental_badge_bucket: NonFungibleBucket =
-                ResourceBuilder::new_ruid_non_fungible::<RentalBadge>(OwnerRole::None)
-                    .metadata(metadata!(
-                        init {
-                            "name" => "Rental Badge", locked;
-                        }
-                    ))
-                    .recall_roles(recall_roles! {
-                        recaller => rule!(require(component_owner_badge_address,));
-                        recaller_updater => rule!(deny_all);
-                    })
-                    .burn_roles(burn_roles! {
-                        burner => rule!(require(component_owner_badge_address));
-                        burner_updater => rule!(deny_all);
-                    })
-                    .non_fungible_data_update_roles(non_fungible_data_update_roles! {
-                        non_fungible_data_updater => rule!(require(global_caller(CarRental::blueprint_id())));
-                        non_fungible_data_updater_updater => rule!(deny_all);
-                    })
-                    .mint_initial_supply([RentalBadge {
-                        start_time: Clock::current_time(TimePrecisionV2::Second),
-                        duration_in_hours: 0,
-                    }]);
+            let rental_badge_bucket: NonFungibleBucket = ResourceBuilder::new_ruid_non_fungible::<
+                RentalBadge,
+            >(OwnerRole::None)
+            .metadata(metadata!(
+                init {
+                    "name" => "Rental Badge", locked;
+                }
+            ))
+            .recall_roles(recall_roles! {
+                recaller => rule!(require(component_owner_badge_address,));
+                recaller_updater => rule!(deny_all);
+            })
+            .burn_roles(burn_roles! {
+                burner => rule!(require(component_owner_badge_address));
+                burner_updater => rule!(deny_all);
+            })
+            .non_fungible_data_update_roles(non_fungible_data_update_roles! {
+                non_fungible_data_updater => rule!(require(global_caller(component_address)));
+                non_fungible_data_updater_updater => rule!(deny_all);
+            })
+            .mint_initial_supply([RentalBadge {
+                start_time: Clock::current_time(TimePrecisionV2::Second),
+                duration_in_hours: 0,
+            }]);
 
             Self {
                 price_per_hour: price_per_hour,
@@ -138,7 +139,7 @@ mod car_rental {
             );
             rental_bag_rm.update_non_fungible_data(
                 &rental_badge.as_non_fungible().non_fungible_local_id(),
-                "duration",
+                "duration_in_hours",
                 duration_in_hours,
             );
             self.fees_vault.put(payment_bucket.take(self.fee));
