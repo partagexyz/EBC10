@@ -1,4 +1,9 @@
 CALL_METHOD
+    Address("${RESIM_ACCOUNT_ADDRESS}")
+    "lock_fee"
+    Decimal("100");
+    
+CALL_METHOD
   Address("${RESIM_ACC_ADD}")
   "create_proof_of_non_fungibles"
   Address("${RESIM_CAR_OWNER_BADGE}")

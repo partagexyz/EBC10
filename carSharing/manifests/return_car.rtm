@@ -15,24 +15,17 @@ CALL_METHOD
 CALL_METHOD
     Address("${RESIM_ACC_ADD}")
     "withdraw"
-    Address("${XRD_ADDRESS}")
-    Decimal("22")
+    Address("${RESIM_RENTAL_BADGE}")
+    Decimal("1")
 ;
 
 TAKE_ALL_FROM_WORKTOP
-    Address("${XRD_ADDRESS}")
-    Bucket("rent_payment")
+    Address("${RESIM_RENTAL_BADGE}")
+    Bucket("rental_badge")
 ;
 
 CALL_METHOD
     Address("${RESIM_CARRENTAL_COMP_ADD}")
-    "rent_car"
-    4u32
-    Bucket("rent_payment")
-;
-
-CALL_METHOD
-  Address("${RESIM_ACC_ADD}")
-  "deposit_batch"
-  Expression("ENTIRE_WORKTOP")
+    "return_car"
+    Bucket("rental_badge")
 ;

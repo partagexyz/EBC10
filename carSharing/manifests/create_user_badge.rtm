@@ -1,4 +1,9 @@
 CALL_METHOD
+    Address("${RESIM_ACCOUNT_ADDRESS}")
+    "lock_fee"
+    Decimal("100");
+    
+CALL_METHOD
   Address("${RESIM_CARSHARING_COMP_ADD}")
   "create_user_account"
   "test"
