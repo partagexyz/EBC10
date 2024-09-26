@@ -1,8 +1,13 @@
 # Partage - Web3 Car-Sharing Platform
 
-The blockchain-based car-sharing platform is made of two main modules: car_rental.rs and car_sharing.rs, linked through lib.rs. Close to GetAround in terms of functionality, the Partage Car-Sharing app will to improve the existing sharing economy by leveraging the best features of blockchain technology: decentralization, data privacy, self-sovereignty, and a more equitable distribution of economic benefits.
+Partage Car-Sharing will to improve the existing sharing economy services by leveraging the best features of blockchain technology: decentralization, data privacy, self-sovereignty, and a more equitable distribution of economic benefits.
 
-In short, this smart contract allows users to rent cars owned by other users.
+Close to getAround in terms of functionality, Partage Car-Sharing allows users to rent cars owned by other users, generating a passive income from low-risk investments on one side, and unlocking cars on-demand everywhere in the world on the other side.
+
+Request an early access at https://partage.xyz
+
+- 3-minute pitch: https://www.youtube.com/watch?v=_ar2LtNWE1c 
+- 5-minute code demo https://youtu.be/h6x220Rn5xc 
 
 ![Partage car-sharing data flow](./car_sharing/dataflow.png)
 
