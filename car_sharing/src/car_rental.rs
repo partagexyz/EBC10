@@ -147,6 +147,7 @@ mod car_rental {
             // Take the fee from the payment bucket
             self.fees_vault.put(payment_bucket.take(self.fee));
 
+            // TODO: Check if the payment is above the rental price and give back the rest
             // Deposit the rest of the payment bucket to the car owner vault
             self.car_owner_vault.put(payment_bucket);
 
