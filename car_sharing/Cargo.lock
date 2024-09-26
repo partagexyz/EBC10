@@ -125,7 +125,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "carSharing"
+name = "car_sharing"
 version = "1.0.0"
 dependencies = [
  "scrypto",
